@@ -1,48 +1,40 @@
+# === index.html ===
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Example</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            text-align: center;
-            padding: 50px;
-        }
-        .message-box {
-            width: 80%;
-            margin: 0 auto;
-            border: 1px solid #ddd;
-            padding: 20px;
-            font-size: 18px;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-        }
-    </style>
+    <title>Real-time Analyzer</title>
 </head>
 <body>
-    <div class="container">
-        <h1>WebSocket Example</h1>
-        <p>WebSocket messages will be displayed below:</p>
-        <div id="messageBox" class="message-box">
-            <p>No messages yet...</p>
-        </div>
-    </div>
+    <h1>Real-time Index Analyzer</h1>
+    <form id="controlForm">
+        <label>Select Indices:</label><br>
+        <input type="checkbox" name="index" value="Volatility 10 Index">Volatility 10 Index<br>
+        <input type="checkbox" name="index" value="Volatility 25 Index">Volatility 25 Index<br>
+        <input type="checkbox" name="index" value="Volatility 75 Index">Volatility 75 Index<br>
+        <input type="checkbox" name="index" value="Volatility 100 Index">Volatility 100 Index<br>
+        <input type="checkbox" name="index" value="Volatility 10 - 1s Index">Volatility 10 1s Index<br>       
+        <input type="checkbox" name="index" value="Volatility 75 - 1s Index">Volatility 75 1s Index<br><br>
+        <button type="button" onclick="startAnalysis()">Start</button>
+        <button type="button" onclick="stopAnalysis()">Stop</button>
+    </form>
 
     <script>
-        // WebSocket connection to the server
-        const ws = new WebSocket('ws://localhost:5000');
+        function startAnalysis() {
+            const indices = Array.from(document.querySelectorAll('input[name="index"]:checked')).map(cb => cb.value);
+            fetch('/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ indices })
+            });
+        }
 
-        // Display received messages in the message box
-        ws.onmessage = function(event) {
-            const messageBox = document.getElementById('messageBox');
-            const newMessage = document.createElement('p');
-            newMessage.textContent = event.data;
-            messageBox.appendChild(newMessage);
-        };
+        function stopAnalysis() {
+            fetch('/stop', {
+                method: 'POST'
+            });
+        }
     </script>
 </body>
 </html>
