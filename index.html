@@ -1,4 +1,3 @@
-# === index.html ===
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,10 +22,19 @@
     <script>
         function startAnalysis() {
             const indices = Array.from(document.querySelectorAll('input[name="index"]:checked')).map(cb => cb.value);
+            
+            // Send the selected indices to the backend for processing
             fetch('/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ indices })
+            });
+            
+            // Send a message to the Telegram bot indicating that the analysis is starting
+            fetch('/send_telegram_message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: "working" })
             });
         }
 
