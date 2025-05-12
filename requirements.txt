@@ -2,3 +2,4 @@ pandas
 Flask
 websocket-client
 requests
+flask-socketio
