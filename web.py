@@ -1,7 +1,11 @@
+from flask import Flask
+import logging
 import websocket
 import json
-import logging
 import time
+
+# Set up Flask app
+app = Flask(__name__)
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -9,6 +13,7 @@ logging.basicConfig(level=logging.INFO)
 # Deriv WebSocket URL
 ws_url = "wss://ws.binaryws.com/websockets/v3?app_id=1089"  # Replace with your app_id if needed
 
+# WebSocket Event Handlers
 def on_message(ws, message):
     try:
         data = json.loads(message)
@@ -38,19 +43,33 @@ def on_open(ws):
     ws.send(json.dumps(subscribe_message))
     logging.info(f"Sent subscription message: {subscribe_message}")
 
-def run_websocket():
-    ws = websocket.WebSocketApp(
-        ws_url,
-        on_open=on_open,
-        on_message=on_message,
-        on_error=on_error,
-        on_close=on_close
-    )
+# Flask Route to Display Content
+@app.route("/display")
+def display():
+    # HTML content embedded directly within the Flask route
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Telegram Trading Bot</title>
+    </head>
+    <body>
+        <h1>Telegram Trading Bot</h1>
+        <p>Welcome to the Telegram Trading Bot's detailed page!</p>
+        <p>Here you can view all the trading information and real-time updates.</p>
 
-    # Keep WebSocket connection alive
-    while True:
-        try:
-            ws.run_forever()
-        except Exception as e:
-            logging.error(f"WebSocket encountered an error: {e}")
-            time.sleep(5)  # Wait for 5 seconds before trying to reconnect
+        <h2>Trading Bot Data</h2>
+        <p>Currently, you are connected to WebSocket and receiving real-time market data from the trading platform.</p>
+        <p>The system analyzes market trends and sends trading alerts to Telegram based on detected breakouts.</p>
+
+        <!-- Additional content can be added here to display trading data or analysis results -->
+    </body>
+    </html>
+    """
+    return html_content
+
+# Start the Flask app
+if __name__ == "__main__":
+    app.run(debug=True)
