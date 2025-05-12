@@ -1,27 +1,31 @@
-from flask import Flask
+import os
 import logging
+from flask import Flask, render_template
 import websocket
 import json
-import time
+import threading
 
-# Set up Flask app
+# Flask setup
 app = Flask(__name__)
 
-# Set up logging
+# WebSocket URL
+ws_url = "wss://ws.binaryws.com/websockets/v3?app_id=1089"
+
+# Enable logging
 logging.basicConfig(level=logging.INFO)
 
-# Deriv WebSocket URL
-ws_url = "wss://ws.binaryws.com/websockets/v3?app_id=1089"  # Replace with your app_id if needed
+# Flask route for rendering the HTML page
+@app.route('/')
+def index():
+    return render_template('index.html')  # Make sure you have an 'index.html' file
 
-# WebSocket Event Handlers
+# WebSocket message handling
 def on_message(ws, message):
     try:
         data = json.loads(message)
         logging.info(f"Received message: {data}")
-        
-        # You can process the received data here
-        if "ticks" in data:
-            logging.info(f"Received ticks: {data['ticks']}")
+        if "tick" in data:
+            logging.info(f"Tick data: {data['tick']}")
     except Exception as e:
         logging.error(f"Error processing message: {e}")
 
@@ -29,47 +33,34 @@ def on_error(ws, error):
     logging.error(f"WebSocket error: {error}")
 
 def on_close(ws, close_status_code, close_msg):
-    logging.info(f"WebSocket closed with code: {close_status_code}, message: {close_msg}")
+    logging.info(f"WebSocket closed: {close_status_code} - {close_msg}")
 
 def on_open(ws):
-    logging.info("WebSocket connection established!")
+    logging.info("WebSocket connected.")
 
-    # Example: Send a subscription message to start receiving market data (ticks)
-    subscribe_message = {
-        "ticks": "R_10",  # Example symbol for volatility index (can be changed)
-        "granularity": 60  # Granularity for the ticks (can be changed)
-    }
+    # Subscribe to tick data for R_10
+    subscribe_msg = {"ticks": "R_10"}
+    ws.send(json.dumps(subscribe_msg))
+    logging.info(f"Sent subscription: {subscribe_msg}")
 
-    ws.send(json.dumps(subscribe_message))
-    logging.info(f"Sent subscription message: {subscribe_message}")
+# Run WebSocket in a separate thread to avoid blocking Flask
+def start_websocket():
+    ws = websocket.WebSocketApp(
+        ws_url,
+        on_open=on_open,
+        on_message=on_message,
+        on_error=on_error,
+        on_close=on_close
+    )
+    ws.run_forever()
 
-# Flask Route to Display Content
-@app.route("/display")
-def display():
-    # HTML content embedded directly within the Flask route
-    html_content = """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Telegram Trading Bot</title>
-    </head>
-    <body>
-        <h1>Telegram Trading Bot</h1>
-        <p>Welcome to the Telegram Trading Bot's detailed page!</p>
-        <p>Here you can view all the trading information and real-time updates.</p>
+# Start WebSocket in a separate thread
+thread = threading.Thread(target=start_websocket)
+thread.daemon = True
+thread.start()
 
-        <h2>Trading Bot Data</h2>
-        <p>Currently, you are connected to WebSocket and receiving real-time market data from the trading platform.</p>
-        <p>The system analyzes market trends and sends trading alerts to Telegram based on detected breakouts.</p>
-
-        <!-- Additional content can be added here to display trading data or analysis results -->
-    </body>
-    </html>
-    """
-    return html_content
-
-# Start the Flask app
+# Run Flask app
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Get the port from the environment, default to 5000 if not set
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
