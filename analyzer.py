@@ -74,7 +74,7 @@ def analyze_selected_indices(selected_indices, data):
         logging.info(f"Analyzing {index}...")
 
         # Make sure data has enough candles
-        if len(data) < 300:
+        if len(data) < 1000:
             logging.warning(f"Not enough data for {index} (needs 300, has {len(data)})")
             continue
 
@@ -114,7 +114,7 @@ def analyze_selected_indices(selected_indices, data):
 
 # Function to run the analysis in a loop indefinitely
 def run_analysis():
-    selected_indices = ["R_10", "R_25", "R_50"]  # You can modify this to include your indices
+    selected_indices = ["R_10", "R_25", "R_75", "R_100"]  # You can modify this to include your indices
     while True:
         # Fetch live data from the trading API (replace with your method to get live data)
         data = fetch_live_data()  # Placeholder for the function to fetch live data
@@ -129,7 +129,7 @@ def fetch_live_data():
     # Placeholder: This function should fetch the latest live candle data from your data source
     # Simulating with random data for now (replace with actual API fetch)
     now = pd.to_datetime("now")
-    timestamps = pd.date_range(end=now, periods=300, freq='T')
+    timestamps = pd.date_range(end=now, periods=1000, freq='T')
     data = pd.DataFrame(index=timestamps)
     data['Open'] = np.random.uniform(100, 110, size=len(data))
     data['High'] = data['Open'] + np.random.uniform(0, 2, size=len(data))
