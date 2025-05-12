@@ -1,10 +1,9 @@
-# === analyzer.py ===
 import pandas as pd
 from notifier import send_telegram_message
 
 def identify_levels(data, window=10):
-    data['Support'] = data['low'].rolling(window=window).min()
-    data['Resistance'] = data['high'].rolling(window=window).max()
+    data['Support'] = data['Low'].rolling(window=window).min()
+    data['Resistance'] = data['High'].rolling(window=window).max()
     return data
 
 def is_consolidating(data, window=10, threshold=0.02):
@@ -15,7 +14,7 @@ def is_consolidating(data, window=10, threshold=0.02):
 
 def calculate_trade_parameters(current, previous):
     entry = current['close']
-    stop_loss = entry - (previous['Resistance'] - previous['Support']) * 0.5
+    stop_loss = entry - (previous['resistance'] - previous['support']) * 0.5
     take_profit = entry + (entry - stop_loss) * 1.5
     return entry, stop_loss, take_profit
 
@@ -41,17 +40,18 @@ def analyze_breakout(data, symbol):
                     'StopLoss': round(stop_loss, 2),
                     'TakeProfit': round(take_profit, 2)
                 })
+                # Send the first (or best) trade signal immediately
+                msg = (f"🚨 *Breakout Detected* for *{symbol}* @ {current.name}\n"
+                       f"Direction: *{direction}*\n"
+                       f"Entry Price: `{entry}`\n"
+                       f"Stop Loss: `{stop_loss}`\n"
+                       f"Take Profit: `{take_profit}`")
+                send_telegram_message(msg)
+                return trades  # Return after sending the first signal
 
     return trades
 
 def analyze_selected_indices(selected_indices, data):
     for symbol in selected_indices:
         trades = analyze_breakout(data, symbol)
-        for trade in trades:
-            msg = (f"🚨 *Breakout Detected* for *{symbol}* @ {trade['Time']}\n"
-                   f"Direction: *{trade['Direction']}*\n"
-                   f"Entry Price: `{trade['Entry']}`\n"
-                   f"Stop Loss: `{trade['StopLoss']}`\n"
-                   f"Take Profit: `{trade['TakeProfit']}`")
-            send_telegram_message(msg)
-            
+        # Optionally handle further trades if needed
