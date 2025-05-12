@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            text-align: center;
+            padding: 50px;
+        }
+        .message-box {
+            width: 80%;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            padding: 20px;
+            font-size: 18px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WebSocket Example</h1>
+        <p>WebSocket messages will be displayed below:</p>
+        <div id="messageBox" class="message-box">
+            <p>No messages yet...</p>
+        </div>
+    </div>
+
+    <script>
+        // WebSocket connection to the server
+        const ws = new WebSocket('ws://localhost:5000');
+
+        // Display received messages in the message box
+        ws.onmessage = function(event) {
+            const messageBox = document.getElementById('messageBox');
+            const newMessage = document.createElement('p');
+            newMessage.textContent = event.data;
+            messageBox.appendChild(newMessage);
+        };
+    </script>
+</body>
+</html>
