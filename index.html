@@ -4,6 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Real-time Analyzer</title>
+    <style>
+        /* Style for the chat box */
+        #chatBox {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            font-family: Arial, sans-serif;
+        }
+
+        #chatBox p {
+            margin: 0;
+            padding: 5px;
+        }
+
+        #chatBox p.system {
+            color: #888;
+        }
+
+        /* Style for the input area */
+        #chatInput {
+            width: calc(100% - 100px);
+            padding: 10px;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
     <h1>Real-time Index Analyzer</h1>
@@ -19,7 +47,24 @@
         <button type="button" onclick="stopAnalysis()">Stop</button>
     </form>
 
+    <!-- Live Chat Box -->
+    <div id="chatBox"></div>
+
     <script>
+        // WebSocket connection to handle live messages
+        const socket = new WebSocket('ws://localhost:5000/live-chat');
+
+        // When a message is received, update the chat box
+        socket.onmessage = function(event) {
+            const message = event.data;
+            const chatBox = document.getElementById('chatBox');
+            const newMessage = document.createElement('p');
+            newMessage.textContent = message;
+            chatBox.appendChild(newMessage);
+            chatBox.scrollTop = chatBox.scrollHeight;  // Scroll to the bottom of the chat
+        };
+
+        // Function to start analysis and trigger Telegram message
         function startAnalysis() {
             const indices = Array.from(document.querySelectorAll('input[name="index"]:checked')).map(cb => cb.value);
             
@@ -36,8 +81,17 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: "working" })
             });
+
+            // Add an initial message to the chat box
+            const chatBox = document.getElementById('chatBox');
+            const initialMessage = document.createElement('p');
+            initialMessage.className = 'system';
+            initialMessage.textContent = 'Starting analysis...';
+            chatBox.appendChild(initialMessage);
+            chatBox.scrollTop = chatBox.scrollHeight; // Ensure scroll to the bottom
         }
 
+        // Function to stop the analysis
         function stopAnalysis() {
             fetch('/stop', {
                 method: 'POST'
