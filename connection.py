@@ -1,44 +1,61 @@
+# === connection.py ===
 import websocket
-import json
-import logging
+import threading
 import time
+import json
+import pandas as pd
+from datetime import datetime
+from analyzer import analyze_selected_indices
 
-logging.basicConfig(level=logging.INFO)
-ws_url = "wss://ws.binaryws.com/websockets/v3?app_id=1089"
+INDEX_MAPPING = {
+    "Volatility 10 Index": "R_10",
+    "Volatility 25 Index": "R_25",
+    "Volatility 75 Index": "R_75",
+    "Volatility 100 Index": "R_100",
+    "Volatility 10 - 1s Index": "R_10_1s",
+    "Volatility 75 - 1s Index": "R_75_1s"
+}
 
-def on_message(ws, message):
-    try:
-        data = json.loads(message)
-        logging.info(f"Received message: {data}")
-        if "tick" in data:
-            logging.info(f"Tick data: {data['tick']}")
-    except Exception as e:
-        logging.error(f"Error processing message: {e}")
+class WebSocketManager:
+    def __init__(self):
+        self.threads = {}
+        self.running = False
 
-def on_error(ws, error):
-    logging.error(f"WebSocket error: {error}")
+    def start(self, indices):
+        self.running = True
+        for index in indices:
+            symbol = INDEX_MAPPING.get(index)
+            if symbol:
+                thread = threading.Thread(target=self.collect_data, args=(symbol,))
+                thread.start()
+                self.threads[symbol] = thread
 
-def on_close(ws, close_status_code, close_msg):
-    logging.info(f"WebSocket closed: {close_status_code} - {close_msg}")
+    def stop(self):
+        self.running = False
+        time.sleep(1)
 
-def on_open(ws):
-    logging.info("WebSocket connected.")
+    def collect_data(self, symbol):
+        ws_url = "wss://ws.binaryws.com/websockets/v3?app_id=1089"
+        ws = websocket.WebSocket()
+        ws.connect(ws_url)
+        ws.send(json.dumps({"ticks": symbol}))
+        ticks = []
 
-    # Subscribe to tick data for R_10
-    subscribe_msg = {"ticks": "R_10"}
-    ws.send(json.dumps(subscribe_msg))
-    logging.info(f"Sent subscription: {subscribe_msg}")
+        while self.running:
+            try:
+                result = json.loads(ws.recv())
+                if "tick" in result:
+                    tick = result["tick"]
+                    ticks.append({"time": datetime.utcfromtimestamp(tick['epoch']), "price": float(tick["quote"])})
 
-def run_websocket():
-    ws = websocket.WebSocketApp(ws_url,
-                                on_open=on_open,
-                                on_message=on_message,
-                                on_error=on_error,
-                                on_close=on_close)
+                    if len(ticks) >= 60:
+                        df = pd.DataFrame(ticks[-60:])
+                        df.set_index("time", inplace=True)
+                        ohlc = df["price"].resample("1Min").ohlc().dropna()
+                        if len(ohlc) >= 20:
+                            analyze_selected_indices([symbol], ohlc)
 
-    while True:
-        try:
-            ws.run_forever()
-        except Exception as e:
-            logging.error(f"WebSocket error: {e}")
-            time.sleep(5)
+            except Exception as e:
+                print(f"Error: {e}")
+                break
+        ws.close()
