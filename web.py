@@ -17,7 +17,8 @@ logging.basicConfig(level=logging.INFO)
 # Flask route for rendering the HTML page
 @app.route('/')
 def index():
-    return render_template('index.html')  # Make sure you have an 'index.html' file
+    return send_file('index.html')
+
 
 # WebSocket message handling
 def on_message(ws, message):
